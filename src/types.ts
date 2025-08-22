@@ -1,9 +1,8 @@
 export interface TaksType {
-    id: number;
+    _id: string;
     titulo: string;
     descripcion: string;
     completada: boolean;
-    borrada: boolean;
 }
 
 // utili types

@@ -2,11 +2,12 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 // import { saveTask } from '../taksManager.ts'
 import type { TaksType } from '../types.ts';
 
+
 interface TaksContextType {
     taks: TaksType[];
-    addTaks: (taks: Omit<TaksType, 'id' | 'completada' | 'borrada'>) => Promise<void>;
-    checkTaks: (id: number) => Promise<void>;
-    deteleTaks: (id: number) => Promise<void>;
+    addTaks: (taks: Omit<TaksType, '_id' | 'completada'>) => Promise<void>;
+    checkTaks: (_id: string) => Promise<void>;
+    deteleTaks: (_id: string) => Promise<void>;
 }
 
 const TaksContext = createContext<TaksContextType | undefined>(undefined);
@@ -23,7 +24,7 @@ function TaksContextProvider({ children }: { children: ReactNode }) {
     // Reutilizable: Carga todas las tareas desde el backend
     async function fetchTaks() {
         try {
-            const response = await fetch('http://localhost:3000/task');
+            const response = await fetch(import.meta.env.VITE_API+'/task');
             const loadedTasks = await response.json() as TaksType[];
             setTaks(loadedTasks);
         } catch (error) {
@@ -34,7 +35,7 @@ function TaksContextProvider({ children }: { children: ReactNode }) {
     // Agregar una nueva tarea (fetch POST)
     const addTaks: TaksContextType['addTaks'] = async (taks) => {
         try {
-            const response = await fetch('http://localhost:3000/task', {
+            const response = await fetch(import.meta.env.VITE_API+'/task', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -66,17 +67,23 @@ function TaksContextProvider({ children }: { children: ReactNode }) {
     };
 
     // Cambiar estado de completada (fetch PATCH)
-    const checkTaks: TaksContextType['checkTaks'] = async (id) => {
+    const checkTaks: TaksContextType['checkTaks'] = async (_id) => {
         try {
-            const response = await fetch(`http://localhost:3000/task/${id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API}/task/${_id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                 }
             });
-            const checkedTaks = await response.json() as TaksType;
-            const updatedTaks = tasks.map(t => t.id === checkedTaks.id ? checkedTaks : t);
+            const checkedTaks = await response.json() as Pick<TaksType, '_id' | 'completada'>; // aqui lo que hacemos es obtener solo el _id y completada de la tarea 
+            const updatedTaks = [...tasks]; // Crear una copia del arreglo de tareas
+            const index = updatedTaks.findIndex(t => t._id == checkedTaks._id); // esto aca es para encontrar la tarea que se esta actualizando
+            if (index == -1) {
+                throw new Error("Error al actualizar la tarea");
+            }
+            updatedTaks[index].completada = checkedTaks.completada; // Actualizar el estado de completada desde el backend
             setTaks(updatedTaks);
+
         } catch (error) {
             console.error(error);
             alert('Error al checkear la tarea');
@@ -94,17 +101,16 @@ function TaksContextProvider({ children }: { children: ReactNode }) {
     };
 
     // Eliminar tarea (DELETE real)
-    const deteleTaks: TaksContextType['deteleTaks'] = async (id) => {
+    const deteleTaks: TaksContextType['deteleTaks'] = async (_id) => {
         try {
-            const response = await fetch(`http://localhost:3000/task/${id}`, {
+            const response = await fetch( `${import.meta.env.VITE_API}/task/${_id}`, {
                 method: 'DELETE',
             });
 
-            if (!response.ok) throw new Error("No se pudo eliminar la tarea");
-
+            const taskEliminada = await response.json() as Pick<TaksType, '_id'>; // Pick<TaksType, '_id'> es porque solo necesitamos el _id entonces prevenimos que nos de todo el objeto
             // const deletedTask = await response.json() as TaksType;
             // Filtrar tarea eliminada del estado
-            const updated = tasks.filter(task => task.id !== id);
+            const updated = tasks.filter(task => task._id !== taskEliminada._id);
             setTaks(updated);
         } catch (error) {
             console.error("Error al eliminar tarea:", error);

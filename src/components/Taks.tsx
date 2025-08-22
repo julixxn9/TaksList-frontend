@@ -54,8 +54,9 @@ interface TaksProps {
     tareaProp: TaksType
 }
 
-function Task({ tareaProp: { titulo, descripcion, completada, id }}: TaksProps) {
-    console.log(id)
+function Task({ tareaProp }: TaksProps) {
+    const { titulo, descripcion, completada, _id } = tareaProp;
+    console.log(_id)
   const [more, setMore] = useState(false);
   const { checkTaks, deteleTaks } = useTaks();
 
@@ -72,7 +73,7 @@ function Task({ tareaProp: { titulo, descripcion, completada, id }}: TaksProps) 
   };
 
   const turnComplete = () => {
-    checkTaks(id);
+    checkTaks(_id);
   };
 
   return (
@@ -124,7 +125,7 @@ function Task({ tareaProp: { titulo, descripcion, completada, id }}: TaksProps) 
             className="w-10 h-10 flex items-center justify-center border-2 border-red-300 bg-red-100 rounded-md
             hover:bg-red-300 hover:border-red-500 transition-all duration-300 hover:scale-110"
             type="button"
-            onClick={() => deteleTaks(id)}
+            onClick={() => deteleTaks(_id)}
           >
             <img className="w-6" src="./borrar.svg" alt="borrar" />
           </button>
